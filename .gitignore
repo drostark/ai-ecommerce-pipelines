@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+examples/merchant-feed/feed.xml
+.DS_Store

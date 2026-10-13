@@ -1,0 +1,27 @@
+# Example only: runs the simplified inventory-sync demo against sample data.
+# It uses no secrets and talks to no external service.
+# The point it illustrates: a sync that cannot verify its writes fails the run,
+# so a person sees a red check instead of a silent "success".
+
+name: Example daily sync
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run sync (exits non-zero on any unverified write)
+        run: python examples/inventory-sync/sync.py

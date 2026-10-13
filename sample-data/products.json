@@ -1,0 +1,93 @@
+[
+  {
+    "sku": "SAMPLE-001",
+    "title": "Sample Linen Duvet Cover",
+    "description": "Soft stonewashed linen cover.",
+    "price": "40.00",
+    "stock": 12,
+    "supplier_stock": 12,
+    "images": [
+      "https://shop.example.com/img/sample-001-1.jpg",
+      "https://shop.example.com/img/sample-001-2.jpg",
+      "https://shop.example.com/img/sample-001-3.jpg"
+    ]
+  },
+  {
+    "sku": "SAMPLE-002",
+    "title": "Sample Cotton Pillowcase",
+    "description": "Breathable cotton pillowcase.",
+    "price": "10.00",
+    "stock": 30,
+    "supplier_stock": 24,
+    "images": [
+      "https://shop.example.com/img/sample-002-1.jpg",
+      "https://shop.example.com/img/sample-002-2.jpg",
+      "https://shop.example.com/img/sample-002-3.jpg"
+    ]
+  },
+  {
+    "sku": "SAMPLE-003",
+    "title": "Sample Wool Throw",
+    "description": "Warm woven throw blanket.",
+    "price": "35.00",
+    "stock": 5,
+    "supplier_stock": 0,
+    "images": [
+      "https://shop.example.com/img/sample-003-1.jpg",
+      "https://shop.example.com/img/sample-003-2.jpg",
+      "https://shop.example.com/img/sample-003-3.jpg"
+    ]
+  },
+  {
+    "sku": "SAMPLE-004",
+    "title": "Sample Bamboo Sheet Set",
+    "description": "Cool, smooth fitted sheet set.",
+    "price": "50.00",
+    "stock": 8,
+    "supplier_stock": 8,
+    "images": [
+      "https://shop.example.com/img/sample-004-1.jpg",
+      "https://shop.example.com/img/sample-004-2.jpg",
+      "https://shop.example.com/img/sample-004-3.jpg"
+    ]
+  },
+  {
+    "sku": "SAMPLE-005",
+    "title": "Sample Down Pillow",
+    "description": "Medium-support pillow.",
+    "price": "25.00",
+    "stock": 0,
+    "supplier_stock": 15,
+    "images": [
+      "https://shop.example.com/img/sample-005-1.jpg",
+      "https://shop.example.com/img/sample-005-2.jpg",
+      "https://shop.example.com/img/sample-005-3.jpg"
+    ]
+  },
+  {
+    "sku": "SAMPLE-006",
+    "title": "Sample Quilted Bedspread",
+    "description": "Lightweight quilted bedspread.",
+    "price": "45.00",
+    "stock": 3,
+    "supplier_stock": 3,
+    "images": [
+      "https://shop.example.com/img/sample-006-1.jpg",
+      "https://shop.example.com/img/sample-006-2.jpg",
+      "https://shop.example.com/img/sample-006-3.jpg"
+    ]
+  },
+  {
+    "sku": "SAMPLE-007",
+    "title": "Sample Waffle Towel",
+    "description": "Quick-drying waffle towel.",
+    "price": "15.00",
+    "stock": 20,
+    "supplier_stock": 22,
+    "images": [
+      "https://shop.example.com/img/sample-007-1.jpg",
+      "https://shop.example.com/img/sample-007-2.jpg",
+      "https://shop.example.com/img/sample-007-3.jpg"
+    ]
+  }
+]
