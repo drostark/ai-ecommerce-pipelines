@@ -40,6 +40,17 @@ More detail: [docs/architecture.md](docs/architecture.md).
 | Instagram | Drafts a caption and image for each new blog post, then waits for my approval to publish | Draft stage runs twice daily; publishing is manual only |
 | Outreach | Researches link-building opportunities and prepares outreach pitches, across four jobs | Scheduled (GitHub Actions) |
 
+### Planned pipelines
+
+Next on the list, built on the same rules: verify every write, fail loudly, and keep a person in the loop for anything that can't be undone.
+
+| Pipeline | What it will do | Schedule |
+|---|---|---|
+| Catalogue health | Checks every product for stock changes, missing data and broken listings, then updates the store and the channel feeds (Merchant Center, idealo) to match | Daily |
+| Price & margin watch | Compares supplier costs with shop prices and flags any product that falls below its target margin before it sells at a loss | Daily |
+| KPI digest | One weekly summary of sales, traffic, search and feed health, so problems show up in one place | Weekly |
+| Social expansion | Extends the Instagram pipeline to Pinterest, Facebook and Reddit, with drafts adapted per channel and the same human approval before anything is posted | With each new blog post |
+
 ## How I build with AI
 
 - **Claude Code and the Claude API.** Claude Code writes and changes the pipelines. The Claude API does runtime language work: Instagram captions, blog drafting, and inline blog translation. Product catalogue translation is a different tool for a different job: Azure AI Translator, behind a cache and a field allowlist.
