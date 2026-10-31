@@ -37,7 +37,7 @@ More detail: [docs/architecture.md](docs/architecture.md).
 | Merchant Center feed | One builder produces a single feed with an offer per product per market, including full image galleries | Scheduled (GitHub Actions) |
 | Translation | Translates product copy from EN into DE/FR/NL via Azure AI Translator (DeepL until Oct 2026), with a cache keyed by content; manual edits are seeded into the cache so they always win | On demand, after catalogue changes; usage checked monthly |
 | Blog | Monthly research stage merged via pull request (my approval gate), then drafts posts Mon–Sat, translated into DE/EN/FR/NL, with AI-generated images | Monthly research + daily drafting |
-| Instagram | Drafts a caption and image for each new blog post, then waits for my approval to publish | Draft stage runs twice daily; publishing is manual only |
+| [Instagram](https://github.com/dstark-maison/mdc-social-pipeline) | Drafts a caption and image for each new blog post, then waits for my approval to publish | Draft stage runs twice daily; publishing is manual only |
 | Outreach | Researches link-building opportunities and prepares outreach pitches, across four jobs | Scheduled (GitHub Actions) |
 
 ### Planned pipelines
