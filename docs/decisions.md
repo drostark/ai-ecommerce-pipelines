@@ -39,3 +39,8 @@
 **Decision:** Start on free-tier infrastructure, such as scheduled CI runs, and pay only when a limit is actually hit.
 **Why:** A solo operation can't carry fixed costs for pipelines that may not earn their keep.
 **Trade-off:** Free tiers have limits and occasional constraints that shape the design.
+
+## 9. Flag unclear cases instead of guessing
+**Decision:** When onboarding products, copy may only use text the manufacturer supplied. Anything ambiguous (a missing translation, an unknown colour name, a doubtful claim) is reported for my decision and never written.
+**Why:** A plausible guess in a product description becomes a public claim about the product. An empty field is easy to fix later; a wrong one has to be found first.
+**Trade-off:** Some products wait for a decision before they go live.
