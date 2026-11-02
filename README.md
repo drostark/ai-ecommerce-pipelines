@@ -38,7 +38,7 @@ More detail: [docs/architecture.md](docs/architecture.md).
 | Merchant Center feed | One builder produces a single feed with an offer per product per market, including full image galleries | Scheduled (GitHub Actions) |
 | Translation | Translates product copy from EN into DE/FR/NL via Azure AI Translator (DeepL until Oct 2026), with a cache keyed by content; manual edits are seeded into the cache so they always win | On demand, after catalogue changes; usage checked monthly |
 | Blog | Monthly research stage merged via pull request (my approval gate), then drafts posts Mon–Sat, translated into DE/EN/FR/NL, with AI-generated images | Monthly research + daily drafting |
-| Social | Drafts a German Instagram and Facebook post for each new blog post, then sends one combined approval email. Nothing is published until I approve, and every post is read back to verify. Nothing is ever posted automatically | Draft stage runs twice daily; publishing is manual only |
+| Social | Drafts German Instagram and Facebook posts for each new blog post (Pinterest being rolled out), then sends one combined approval email. Nothing is published until I approve, and every post is read back to verify. Nothing is ever posted automatically | Draft stage runs twice daily; publishing is manual only |
 | Outreach | Researches link-building opportunities and prepares outreach pitches, across four jobs | Scheduled (GitHub Actions) |
 
 ### Planned pipelines
@@ -50,7 +50,6 @@ Next on the list, built on the same rules: verify every write, fail loudly, and 
 | Catalogue health | Checks every product for stock changes, missing data and broken listings, then updates the store and the channel feeds (Merchant Center, idealo) to match | Daily |
 | Price & margin watch | Compares supplier costs with shop prices and flags any product that falls below its target margin before it sells at a loss | Daily |
 | KPI digest | One weekly summary of sales, traffic, search and feed health, so problems show up in one place | Weekly |
-| Social expansion | Adds Pinterest to the social pipeline, with drafts adapted to the channel and the same human approval before anything is posted | With each new blog post |
 
 ## How I build with AI
 
