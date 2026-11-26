@@ -45,12 +45,12 @@
 **Why:** A plausible guess in a product description becomes a public claim about the product. An empty field is easy to fix later; a wrong one has to be found first.
 **Trade-off:** Some products wait for a decision before they go live.
 
-## 10. Providers sit behind an interface, and a free tier must fail safe
-**Decision:** The translation provider is one adapter behind a stable interface. The Gemini adapter batches strings into structured-JSON requests, throttles to the free-tier per-minute limit, retries rate limits with backoff, and stops cleanly (distinct exit code) on the daily quota. The cache is written after every field, so a rerun after the reset resumes. No billing is linked, so the limit stops the run instead of charging.
-**Why:** A free tier is only free if hitting its limit is a normal, recoverable event. Switching provider has now happened twice (DeepL, Azure, Gemini); each switch has to be cheap.
-**Trade-off:** A general-purpose model needs more guard rails than a dedicated translator: output validation in code, and one retry then a manual-review flag for out-of-range lengths. Free-tier content may be used by the provider, so only public product copy goes through it.
+## 10. The translation engine sits behind an interface, and a free tier must fail safe
+**Decision:** Translation goes through one stable interface, with the engine and model chosen by configuration. The Gemini adapter batches strings into structured-JSON requests, throttles to the per-minute limit, backs off on 429, and stops cleanly (distinct exit code) at the daily quota. The cache is written after every field, so a rerun after the reset resumes. Only marketing prose goes to the LLM; spec and legal blocks are rebuilt deterministically and must match exactly. Out-of-range lengths get one retry, then a manual-review flag; a glossary and blocking checks (formality, untranslated terms) hold failing rows.
+**Why:** A free tier is only free if hitting its limit is a normal, recoverable event, and a swappable engine keeps the workflow independent of any one vendor. Keeping legal and spec text out of the LLM removes the riskiest class of translation error.
+**Trade-off:** A general-purpose model needs more guard rails than a dedicated translator, and the checks add code to maintain. Free-tier content may be used by the provider, so only public product copy goes through it.
 
 ## 11. A new sales channel is a small in-house publisher, not a hub
-**Decision:** eBay is served by its own publisher against eBay's Sell Inventory API, with a channel-neutral listing model so another channel could be added next to it. It is dry-run by default, and doubtful items are held for review instead of published. It currently covers outlet items only.
-**Why:** The store stays the source of truth and the rules (verify after writing, hold unclear cases) stay in my code. No third-party multichannel subscription.
-**Trade-off:** I maintain the marketplace integration myself, and it does not yet cover the main catalogue.
+**Decision:** eBay is served by its own publisher against eBay's Inventory API, with a channel-neutral listing model so another channel can sit next to it. Scheduled jobs sync orders, stock and price and publish new listings. It is dry-run by default, and doubtful items are held for review instead of published.
+**Why:** The store stays the source of truth and the rules (verify after writing, hold unclear cases) stay in my own code. No third-party multichannel subscription.
+**Trade-off:** I maintain the marketplace integration myself.

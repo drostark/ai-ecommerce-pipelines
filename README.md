@@ -18,7 +18,7 @@ flowchart LR
     SYNC -->|write + verify| SHOP[(Store)]
     SHOP --> FEED[Merchant feed builder]
     FEED --> MC[Merchant Center<br/>one feed, all markets]
-    SHOP --> EBAY[eBay publisher<br/>in-house, outlet items]
+    SHOP --> EBAY[eBay publisher<br/>in-house, Inventory API]
     EBAY -->|publish + read back| EB[eBay marketplace]
     SHOP --> TR[Catalogue translation<br/>Gemini API + Claude for titles/meta]
     TR <--> CACHE[(Cache + manual edits)]
@@ -38,8 +38,8 @@ More detail: [docs/architecture.md](docs/architecture.md).
 | Supplier sync | Pulls supplier product and stock data, writes it to the store, reads it back to verify. Built for a direct supplier integration | Daily (GitHub Actions) |
 | Supplier onboarding | Takes a new supplier batch from bulk export to live listings: build batches, diff the product structure as a dry run, apply with an explicit `--write`, then read every field back to verify. Product copy may only use manufacturer-supplied text; unclear cases are flagged for my decision instead of guessed | On demand, per supplier batch |
 | Merchant Center feed | One builder produces a single feed with an offer per product per market, including full image galleries | Scheduled (GitHub Actions) |
-| eBay channel | In-house publisher for a second sales channel: builds eBay listings from store data and publishes them through eBay's Sell Inventory API (dry-run by default; the scheduled jobs pass an explicit apply flag). It keeps the single unit of each item from being sold twice: an eBay order lowers store stock, a store sale withdraws the eBay offer, and prices follow the store. Doubtful items (low-confidence category, price below a floor) are held and mailed to me instead of published. **Status: built and running for outlet (returned / open-box) items only, first live listing published in Nov 2026. Not extended to the main catalogue.** It is its own publisher, not an extra output of the Merchant Center feed builder, and uses no third-party multichannel tool | Hourly (orders, stock, price) and daily (publish, price) via GitHub Actions |
-| Translation | Translates product copy from EN into DE/FR/NL via the Gemini API (free tier), with Claude for titles and meta fields. Provider history: DeepL, then Azure AI Translator, then Gemini. A cache keyed by content; manual edits are seeded into the cache so they always win | On demand, after catalogue changes; free-tier usage logged per run |
+| eBay channel | In-house publisher for an additional sales channel: maps store data to eBay listings and publishes them through eBay's Inventory API. Scheduled jobs sync orders, stock and price and publish new listings. An eBay order lowers store stock and a store sale withdraws the offer, so a single unit is never sold twice. Doubtful items (low-confidence category, price below a floor) are held for review instead of published. Dry-run by default; no third-party multichannel tool | Hourly (orders, stock, price) and daily (publish, price) via GitHub Actions |
+| Translation | Translates product copy from EN into DE/FR/NL with the Gemini API (`gemini-3.5-flash-lite`, free tier) behind a swappable translate interface; Claude handles titles and meta fields. Only marketing prose goes to the LLM; spec and legal blocks are rebuilt deterministically and checked for an exact match. Content-keyed cache; manual edits are seeded so they always win | On demand, after catalogue changes |
 | Blog | Monthly research stage merged via pull request (my approval gate), then drafts posts Mon–Sat, translated into DE/EN/FR/NL, with AI-generated images | Monthly research + daily drafting |
 | Social | Drafts German Instagram and Facebook posts for each new blog post (Pinterest being rolled out), then sends one combined approval email. Nothing is published until I approve, and every post is read back to verify. Nothing is ever posted automatically | Draft stage runs twice daily; publishing is manual only |
 | Outreach | Researches link-building opportunities and prepares outreach pitches, across four jobs | Scheduled (GitHub Actions) |
@@ -61,33 +61,24 @@ Next on the list, built on the same rules: verify every write, fail loudly, and 
 - **Read-only diagnosis before writes.** When something looks wrong, the first pass only reads: find the cause, show the evidence, propose the fix. Writes come after I agree.
 - **Verification after.** Every write is read back and compared. A run that cannot prove it worked fails.
 
-## Translation provider history: DeepL → Azure AI Translator → Gemini API
+## Translation engine
 
-Catalogue translation has had three providers. Each switch was small because the provider sits behind a stable interface and my own data (cache, manual edits, glossary) stays on my side.
+Catalogue translation runs on the Gemini API (`gemini-3.5-flash-lite`, free tier), with Claude kept for product titles and SEO meta fields. The engine is a replaceable part of the workflow: the rest of the pipeline only knows a translate interface, and my own data (cache, manual edits, glossary) stays on my side.
 
-| | DeepL API Free | Azure AI Translator (F0) | Gemini API (free tier) |
-|---|---|---|---|
-| Period | until Oct 2026 | Oct–Nov 2026 | from Nov 2026 |
-| Free allowance | 1M characters, lifetime | 2M characters per month | Request limits per minute and per day, no character pool |
-| Billing | none | none | none linked, so at the limit it stops instead of charging |
-| Model | Dedicated MT | Dedicated MT | General LLM (`gemini-3.5-flash-lite`) |
+### Design
 
-**DeepL → Azure (Oct 2026).** DeepL's free plan has a 1M-character *lifetime* limit and the catalogue had used about 90% of it. I compared real DE/FR/NL product copy side by side and switched. A monthly scheduled check tracked Azure usage.
-
-**Azure → Gemini (Nov 2026).** Glossary terms found in each text are listed in the request as hints. The trade-off of a general model is that it needs more guard rails than a dedicated translator, so the design below puts them in code. Free-tier content may be used by the provider to improve its products. Product copy is public anyway, but nothing confidential goes through this route.
-
-### Design of the Gemini provider
-
-- **Provider behind a stable interface.** The rest of the pipeline calls one translation interface. The provider is selected by configuration and the model ID comes from configuration with no default, so a model change is a config change.
+- **Swappable engines.** One stable translate interface; the engine and model ID come from configuration, so a different engine is a new adapter plus a config change. The same interface can front a dedicated MT service such as DeepL or Azure AI Translator.
+- **Only marketing prose goes to the LLM.** Spec and legal blocks (dimensions, materials, care, legal text) are rebuilt deterministically from structured data and per-locale templates, then compared with the expected output. Anything but an exact match fails the run.
 - **Batched, structured requests.** Strings are grouped (at most 15 texts or about 8k characters per request) and the model must answer in a fixed JSON shape, one entry per input id. A malformed or incomplete answer is rejected, never half-applied.
-- **Throttled and resilient.** Requests are throttled to the model's per-minute limit. A per-minute rate-limit response is retried with exponential backoff (or the server's suggested delay). An authentication failure is never retried.
-- **Resume-safe on the daily quota.** The cache is written after every field. When the daily quota runs out the run stops cleanly with a distinct exit code, and the same command rerun after the reset continues from cache hits.
+- **Throttled and resilient.** Requests are throttled to the model's per-minute limit (RPM). A rate-limit (429) response is retried with exponential backoff or the server's suggested delay. An authentication failure is never retried.
+- **Resume-safe at the daily quota.** The cache is written after every field. When the daily quota runs out, the run stops cleanly with a distinct exit code, and the same command rerun after the reset continues from cache hits. No billing is linked, so the free tier stops instead of charging.
 - **Length-range validation.** For fields with a length rule the allowed range is part of the request. An out-of-range answer is retried once with the measured length fed back; if it is still out of range the field is flagged for manual review. No further automatic rewriting.
-- **Provider-agnostic cache.** The cache key (`locale:field:text`, plus a glossary version tag) does not include the provider, so existing translations were reused after each switch, and manual edits still always win.
-- **Claude where wording matters most.** Product titles and SEO titles and meta descriptions still go to Claude, with length and content rules enforced in code.
-- **Cost and quota visibility.** Each run appends its request, character and token counts to a local usage log, so limits show up before they are hit.
+- **Glossary and blocking quality checks.** A product-type glossary lists the matched terms in each request. Blocking checks catch wrong formality (informal address where formal is required) and untranslated terms left in the source language. A row that fails is held for review, not written.
+- **Provider-agnostic cache.** The cache key (`locale:field:text`, plus a glossary version tag) does not name the engine, so existing translations are reused after an engine change, and manual edits always win.
+- **Claude where wording matters most.** Titles and SEO titles and meta descriptions go to Claude, with length and content rules enforced in code.
+- **Quota visibility.** Each run appends its request, character and token counts to a local usage log, so limits show up before they are hit.
 
-**The point.** Because the translator sits behind its own small interface, changing provider twice was a configuration change plus a new adapter, not a rebuild.
+**Trade-off.** A general model needs more guard rails than a dedicated translator, so the guard rails live in code. Free-tier content may be used by the provider to improve its products; only public product copy goes through this route, never anything confidential.
 
 ## Examples
 
@@ -113,7 +104,7 @@ Add `--simulate-silent-drop` to the inventory sync to watch it catch a store tha
 2. **Protect human edits.** If automation can overwrite a correction, people stop correcting. Manual edits live in the same cache and always win.
 3. **Make cost a design decision.** Cache by content so unchanged text is never sent to the translator twice, translate only an allowlist of fields, and prefer free tiers until a paid one is justified.
 4. **Keep approval gates where actions can't be undone.** Drafting is automatic; publishing is a person pressing a button.
-5. **Keep vendors swappable.** Put external services behind a thin interface and keep your own data (cache, edits) on your side. When DeepL's free limit ran out, moving to Azure took a provider switch, not a rewrite. The same interface made the later move to Gemini an adapter, not a rewrite.
+5. **Keep vendors swappable.** Put external services behind a thin interface and keep your own data (cache, edits) on your side. Changing the translation engine takes a new adapter and a config change, not a rewrite.
 6. **Don't depend on a paid third-party hub for a new channel.** A second sales channel (eBay) is a small in-house publisher with the same rules as everything else: dry-run first, verify after, hold doubtful items for a person.
 
 More: [docs/decisions.md](docs/decisions.md).
