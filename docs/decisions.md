@@ -12,7 +12,7 @@
 
 ## 3. Cache translations by `locale:field:text`
 **Decision:** Include the source text in the cache key.
-**Why:** Unchanged copy is never sent to DeepL twice, and only allowlisted fields are ever sent. Changed copy misses the cache and is retranslated automatically, so stale translations can't survive an edit.
+**Why:** Unchanged copy is never sent to the translation provider twice, and only allowlisted fields are ever sent. The key does not name the provider, so a provider switch reuses what is already translated. Changed copy misses the cache and is retranslated automatically, so stale translations can't survive an edit.
 **Trade-off:** If the source changes, an old manual edit is orphaned under the old key and must be re-seeded. I accept that because the alternative, silently keeping a translation that no longer matches the source, is worse.
 
 ## 4. Manual edits live in the cache and always win
@@ -44,3 +44,13 @@
 **Decision:** When onboarding products, copy may only use text the manufacturer supplied. Anything ambiguous (a missing translation, an unknown colour name, a doubtful claim) is reported for my decision and never written.
 **Why:** A plausible guess in a product description becomes a public claim about the product. An empty field is easy to fix later; a wrong one has to be found first.
 **Trade-off:** Some products wait for a decision before they go live.
+
+## 10. Providers sit behind an interface, and a free tier must fail safe
+**Decision:** The translation provider is one adapter behind a stable interface. The Gemini adapter batches strings into structured-JSON requests, throttles to the free-tier per-minute limit, retries rate limits with backoff, and stops cleanly (distinct exit code) on the daily quota. The cache is written after every field, so a rerun after the reset resumes. No billing is linked, so the limit stops the run instead of charging.
+**Why:** A free tier is only free if hitting its limit is a normal, recoverable event. Switching provider has now happened twice (DeepL, Azure, Gemini); each switch has to be cheap.
+**Trade-off:** A general-purpose model needs more guard rails than a dedicated translator: output validation in code, and one retry then a manual-review flag for out-of-range lengths. Free-tier content may be used by the provider, so only public product copy goes through it.
+
+## 11. A new sales channel is a small in-house publisher, not a hub
+**Decision:** eBay is served by its own publisher against eBay's Sell Inventory API, with a channel-neutral listing model so another channel could be added next to it. It is dry-run by default, and doubtful items are held for review instead of published. It currently covers outlet items only.
+**Why:** The store stays the source of truth and the rules (verify after writing, hold unclear cases) stay in my code. No third-party multichannel subscription.
+**Trade-off:** I maintain the marketplace integration myself, and it does not yet cover the main catalogue.
