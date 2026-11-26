@@ -5,7 +5,8 @@ changed source copy simply misses the cache and gets retranslated, while
 unchanged copy is never paid for twice. Human edits are seeded into the same
 cache with source="manual"; automation only ever *adds* missing keys.
 
-`machine_translate` is a stand-in for the DeepL call. FIELDS is an allowlist:
+`machine_translate` is a stand-in for the provider call (a real pipeline keeps
+the provider behind this one function, so switching provider changes nothing else). FIELDS is an allowlist:
 nothing outside it is ever sent for translation.
 """
 import json
